@@ -136,9 +136,11 @@ async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
 
     semaphore = asyncio.Semaphore(3)
     async def process_single_cv(filename: str, cv_text: str):
+        print(cv_text)
         async with semaphore:
             try:
                 prompt = f"Please verify this CV strictly following your rules. Output ONLY one float score in [0,1].\nCV:\n{cv_text}"
+                print(prompt)
                 resp = await agent.ainvoke({"input": prompt})
                 messages = resp["messages"]
                 ai_msg = None
