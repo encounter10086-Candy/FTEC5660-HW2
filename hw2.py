@@ -139,7 +139,11 @@ async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
                 prompt = f"Please verify this CV strictly following your rules. Output ONLY one float score in [0,1].\nCV:\n{cv_text}"
                 resp = await agent.ainvoke({"input": prompt})
                 raw_str = resp["messages"][-1].content.strip()
+
+                
                 print(f"---AI raw output for {filename}: {raw_str}")
+
+                
                 score = float(raw_str)
                 score = max(0.0, min(1.0, score))
                 return filename, score
