@@ -96,10 +96,10 @@ select the best-matched person_id. Do NOT select the wrong person.** Facebook da
 2. Discrepancies are only ever in these fields: name, city, jobs (company, title, seniority, start_year, end_year), education (school, 
 degree, field, graduation_year), skills.
 Within these fields, any mismatch counts as a discrepancy, except for mere wording or abbreviation differences.
-Examples: wrong name, wrong city, wrong field of study, inflated title, wrong year, fake school/company, non-existent skill.
-E.g. BSc = Bachelor of Science. It is okay if the CV lists fewer skills.
-- Any discrepancy → score ≤ 0.5
-- All match → score > 0.5
+Examples of allowed differences (NOT discrepancies): BSc = Bachelor of Science, the CV lists fewer skills than LinkedIn.
+Examples of real discrepancies: wrong name, wrong city, wrong field of study, inflated title, wrong year, fake school/company, non-existent skill.
+- If NO discrepancies found: output score > 0.5
+- If ANY discrepancy exists: output score < 0.5
 3. Ignore job descriptions, headline and hometown for judgement.
 4. Output ONLY one float between 0 and 1. No extra explanations.
 5. If tool fails, still output a valid float [0,1]. Avoid infinite loops.
@@ -136,9 +136,10 @@ async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
     async def process_single_cv(filename: str, cv_text: str):
         async with semaphore:
             try:
-                prompt = f"Please verify this CV and output ONLY one float score in [0,1].\nCV:\n{cv_text}"
+                prompt = f"Please verify this CV strictly following your rules. Output ONLY one float score in [0,1].\nCV:\n{cv_text}"
                 resp = await agent.ainvoke({"input": prompt})
                 raw_str = resp["messages"][-1].content.strip()
+                print(f"---AI raw output for {filename}: {raw_str}")
                 score = float(raw_str)
                 score = max(0.0, min(1.0, score))
                 return filename, score
