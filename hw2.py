@@ -159,6 +159,7 @@ Follow your mandatory procedure. Your final answer must be ONLY one float in [0,
                 if ai_msg is None:
                     raise ValueError("No AI message found")
                 raw_str = ai_msg.content.strip()
+                print(raw_str[:500], file=sys.stderr)
                 score = parse_score(raw_str)
                 score = max(0.0, min(1.0, score))
                 return filename, score
