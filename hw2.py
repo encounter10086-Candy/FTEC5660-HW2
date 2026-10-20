@@ -134,7 +134,7 @@ async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
     shared by the whole class.
     """
     ### YOUR CODE HERE
-    import sys
+    
     semaphore = asyncio.Semaphore(3)
     async def process_single_cv(filename: str, cv_text: str):
         async with semaphore:
@@ -159,12 +159,10 @@ Follow your mandatory procedure. Your final answer must be ONLY one float in [0,
                 if ai_msg is None:
                     raise ValueError("No AI message found")
                 raw_str = ai_msg.content.strip()
-                print(raw_str[:500], file=sys.stderr)
                 score = parse_score(raw_str)
                 score = max(0.0, min(1.0, score))
                 return filename, score
             except Exception as err:
-                print(f"[CV ERROR] {filename}: {str(err)}")
                 return filename, 0.0
     
     tasks = [process_single_cv(name, text) for name, text in cvs.items()]
