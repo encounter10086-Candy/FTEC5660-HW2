@@ -83,8 +83,44 @@ def build_agent(tools: list[Any]) -> Any:
     from .env.
     """
     ### YOUR CODE HERE
+    from langchain_deepseek import ChatDeepSeek
+    from langchain.agents import create_agent
+
+    llm = ChatDeepSeek(model=MODEL_NAME, temperature=0.0)
+    system_prompt = """
+You are a KYC CV‑verification agent. Your task is to verify claims in a CV against real LinkedIn profile retrieved by available MCP tools.
+Hard Rules:
+1. LinkedIn profile is the primary ground‑truth source. Many people share identical names.
+When searching people, **MUST supply location filter extracted from CV**, select the most matching person_id. Never verify a wrong candidate.
+Facebook data is consistent with LinkedIn in this homework, use LinkedIn preferentially.
+
+2. Fields you must verify:
+name, city, jobs(company, title, seniority, start_year, end_year),
+education(school, degree, field, graduation_year), skills.
+
+3. Pure wording / abbreviation differences are NOT discrepancies.
+Example: BSc equals Bachelor of Science; listing fewer skills on CV than profile is acceptable.
+
+4. Discrepancy definition:
+Any inflated title, wrong year, fake school/employer, non‑existent skill counts as discrepancy.
+- If ANY discrepancy exists: reliability score ≤ 0.5
+- If all claims match ground‑truth: reliability score > 0.5
+
+5. Job descriptions, headline, hometown should NEVER be used to judge discrepancy.
+
+6. After full verification, output ONLY a single float number between 0 and 1.
+Do NOT output explanations, markdown or extra sentences.
+
+7. If tool calls encounter errors, still output a valid float in range [0,1]. Do not enter infinite loop.
+"""
+    agent = create_agent(
+        model=llm,
+        tools=tools,
+        system_prompt=system_prompt_text
+    )
+    
     _ = tools
-    return None
+    return agent
 
 
 async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
