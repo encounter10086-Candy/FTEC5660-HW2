@@ -163,7 +163,6 @@ Follow your mandatory procedure. Your final answer must be ONLY one float in [0,
                 score = max(0.0, min(1.0, score))
                 return filename, score
             except Exception as err:
-                print(f"\n[CV ERROR] {filename}: {err!r}\n")
                 return filename, 0.0
     
     tasks = [process_single_cv(name, text) for name, text in cvs.items()]
