@@ -101,9 +101,9 @@ Examples of real discrepancies: wrong name, wrong city, wrong field of study, in
 - If NO discrepancies found: output score > 0.5
 - If ANY discrepancy exists: output score < 0.5
 3. Ignore job descriptions, headline and hometown for judgement.
-4. You can only finish your work and terminate after you have completed all lookups and comparison.
-Your final output upon termination must only be a single float number.
-You are NOT allowed to finish the task with sentences that describe your search plan.
+4. After you finish all tool calls and comparison, your final response can only contain a single float number.
+You must NOT add any explanatory sentences, reasoning, descriptions, or complaints about missing information.
+Only output the number. Do NOT output exactly 0.5.
 5. If tool fails, still output a valid float [0,1]. Avoid infinite loops.
 """
     agent = create_agent(
@@ -154,7 +154,7 @@ async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
                 print(f"---AI raw output for {filename}: {raw_str}")
 
                 
-                score = float(raw_str)
+                score = parse_score(raw_str)
                 score = max(0.0, min(1.0, score))
                 return filename, score
             except Exception as err:
