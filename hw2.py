@@ -107,7 +107,7 @@ E.g. BSc = Bachelor of Science. It is okay if the CV lists fewer skills.
     agent = create_agent(
         model=llm,
         tools=tools,
-        system_prompt=system_prompt_text
+        system_prompt=system_prompt
     )
     return agent
 
