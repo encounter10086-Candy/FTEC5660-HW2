@@ -134,7 +134,7 @@ async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
     shared by the whole class.
     """
     ### YOUR CODE HERE
-
+    import sys
     semaphore = asyncio.Semaphore(3)
     async def process_single_cv(filename: str, cv_text: str):
         async with semaphore:
