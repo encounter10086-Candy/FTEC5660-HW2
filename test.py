@@ -1,30 +1,35 @@
 import asyncio
-import os
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
+MCP_URL = "https://ftec5660.ngrok.app/mcp"
+
 async def main():
-    mcp_token = os.environ["MCP_TOKEN"]
-    client = MultiServerMCPClient({
-        "socialgraph": {
-            "transport": "streamable_http",
-            "url": "https://ftec5660.ngrok.app/mcp",
-            "headers": {"Authorization": f"Bearer {mcp_token}"}
+    client = MultiServerMCPClient(
+        {
+            "social_graph": {
+                "transport": "http",
+                "url": MCP_URL,
+                "headers": {"ngrok-skip-browser-warning": "true"},
+            }
         }
-    })
+    )
     async with client:
         tools = await client.get_tools()
+        print("=== 全部MCP工具列表 ===")
         for t in tools:
-            print(t.name, " | ", t.description)
+            print(f"工具名称：{t.name}，说明：{t.description}")
 
+        # 找到linkedin查询工具
         linkedin_tool = [t for t in tools if "linkedin" in t.name.lower()][0]
-        res_li = await linkedin_tool.ainvoke({"person_id": 10001})
-        print("\n=== Kelly LinkedIn ===")
-        print(res_li)
+        li_result = await linkedin_tool.ainvoke({"person_id": 10001})
+        print("\n===== Kelly Tsang LinkedIn档案（person_id=10001）=====")
+        print(li_result)
 
+        # 找到facebook查询工具
         fb_tool = [t for t in tools if "facebook" in t.name.lower()][0]
-        res_fb = await fb_tool.ainvoke({"user_id": 10001})
-        print("\n=== Kelly Facebook ===")
-        print(res_fb)
+        fb_result = await fb_tool.ainvoke({"user_id": 10001})
+        print("\n===== Kelly Tsang Facebook档案（user_id=10001）=====")
+        print(fb_result)
 
 if __name__ == "__main__":
     asyncio.run(main())
