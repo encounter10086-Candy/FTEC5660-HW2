@@ -88,38 +88,27 @@ def build_agent(tools: list[Any]) -> Any:
 
     llm = ChatDeepSeek(model=MODEL_NAME, temperature=0.0)
     system_prompt = """
-You are a KYC CV‑verification agent. Your task is to verify claims in a CV against real LinkedIn profile retrieved by available MCP tools.
-Hard Rules:
-1. LinkedIn profile is the primary ground‑truth source. Many people share identical names.
-When searching people, **MUST supply location filter extracted from CV**, select the most matching person_id. Never verify a wrong candidate.
-Facebook data is consistent with LinkedIn in this homework, use LinkedIn preferentially.
+You are a KYC CV verification agent. Check CV statements against LinkedIn profiles fetched by MCP tools.
 
-2. Fields you must verify:
-name, city, jobs(company, title, seniority, start_year, end_year),
-education(school, degree, field, graduation_year), skills.
-
-3. Pure wording / abbreviation differences are NOT discrepancies.
-Example: BSc equals Bachelor of Science; listing fewer skills on CV than profile is acceptable.
-
-4. Discrepancy definition:
-Any inflated title, wrong year, fake school/employer, non‑existent skill counts as discrepancy.
-- If ANY discrepancy exists: reliability score ≤ 0.5
-- If all claims match ground‑truth: reliability score > 0.5
-
-5. Job descriptions, headline, hometown should NEVER be used to judge discrepancy.
-
-6. After full verification, output ONLY a single float number between 0 and 1.
-Do NOT output explanations, markdown or extra sentences.
-
-7. If tool calls encounter errors, still output a valid float in range [0,1]. Do not enter infinite loop.
-"""
+Rules:
+1. LinkedIn is the ground truth. Many names collide. **You MUST use CV-extracted location as filter when searching, 
+select the best-matched person_id. Do NOT select the wrong person.** Facebook data is identical to LinkedIn here; use LinkedIn first.
+2. Discrepancies are only ever in these fields: name, city, jobs (company, title, seniority, start_year, end_year), education (school, 
+degree, field, graduation_year), skills.
+Within these fields, any mismatch counts as a discrepancy, except for mere wording or abbreviation differences.
+Examples: wrong name, wrong city, wrong field of study, inflated title, wrong year, fake school/company, non-existent skill.
+E.g. BSc = Bachelor of Science. It is okay if the CV lists fewer skills.
+- Any discrepancy → score ≤ 0.5
+- All match → score > 0.5
+3. Ignore job descriptions, headline and hometown for judgement.
+4. Output ONLY one float between 0 and 1. No extra explanations.
+5. If tool fails, still output a valid float [0,1]. Avoid infinite loops.
+""""
     agent = create_agent(
         model=llm,
         tools=tools,
         system_prompt=system_prompt_text
     )
-    
-    _ = tools
     return agent
 
 
@@ -142,9 +131,29 @@ async def score_cvs(agent: Any, cvs: dict[str, str]) -> dict[str, float | None]:
     shared by the whole class.
     """
     ### YOUR CODE HERE
-    _ = agent
-    return {name: None for name in cvs}
 
+    semaphore = asyncio.Semaphore(3)
+    async def process_single_cv(filename: str, cv_text: str):
+        async with semaphore:
+            try:
+                prompt = f"Please verify this CV and output ONLY one float score in [0,1].\nCV:\n{cv_text}"
+                resp = await agent.ainvoke({"input": prompt})
+                raw_str = resp["output"].strip()
+                score = float(raw_str)
+                score = max(0.0, min(1.0, score))
+                return filename, score
+            except Exception as err:
+                print(f"[CV ERROR] {filename}: {str(err)}")
+                return filename, 0.0
+    
+    tasks = [process_single_cv(name, text) for name, text in cvs.items()]
+    results = await asyncio.gather(*tasks)
+    
+    output_dict = {}
+    for fname, s in results:
+        output_dict[fname] = s
+        
+    return output_dict
 
 # Everything below is provided runner/scoring code. No edits are needed.
 
